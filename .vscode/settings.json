@@ -1,8 +1,0 @@
-{
-    "files.associations": {
-        "memory.h": "c",
-        "chunk.h": "c",
-        "common.h": "c",
-        "stdio.h": "c"
-    }
-}
