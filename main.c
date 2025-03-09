@@ -11,13 +11,21 @@ int main(int argc, const char* argv[]) {
     printf("Initializing Chunk...\n");
     initChunk(&chunk);
 
-    printf("Adding constant...\n");
+
     int constant = addConstant(&chunk, 1.2);
-    printf("Writing OP_CONSTANT...\n");
     writeChunk(&chunk, OP_CONSTANT, 123);
-    printf("Writing constant...\n");
     writeChunk(&chunk, constant, 123);
-  
+    constant = addConstant(&chunk, 3.4);
+    writeChunk(&chunk, OP_CONSTANT, 123);
+    writeChunk(&chunk, constant, 123);
+    writeChunk(&chunk, OP_ADD, 123);
+    constant = addConstant(&chunk, 5.6);
+    writeChunk(&chunk, OP_CONSTANT, 123);
+    writeChunk(&chunk, constant, 123);
+    writeChunk(&chunk, OP_DIVIDE, 123);
+    printf("Writing OP_CONSTANT...\n");
+    writeChunk(&chunk, OP_NEGATE, 123);
+    
     printf("Writing OP_RETURN...\n");
     writeChunk(&chunk, OP_RETURN, 123);
 
