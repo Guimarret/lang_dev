@@ -220,6 +220,11 @@ static void parsePrecedence(Precedence precedence) {
   }
 
   prefixRule();
+  while (precedence <= getRule(parser.current.type)->precedence) {
+    advance();
+    ParseFn infixRule = getRule(parser.previous.type)->infix;
+    infixRule();
+  }
 }
 
 static ParseRule* getRule(TokenType type) {
@@ -230,7 +235,7 @@ static void expression() {
   parsePrecedence(PREC_ASSIGNMENT);
 }
 
-void compile(const char* source, Chunk* chunk) {
+bool compile(const char* source, Chunk* chunk) {
   initScanner(source);
   compilingChunk = chunk;
 
