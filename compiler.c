@@ -44,18 +44,25 @@ typedef struct {
   int depth;
 } Local;
 
-typedef struct {
-  Local locals[UINT8_COUNT];
-  int localCount;
-  int scopeDepth;
+typedef enum {
+  TYPE_FUNCTION,
+  TYPE_SCRIPT
+} FunctionType;
+
+typedef struct Compiler {
+  struct Compiler* enclosing;
+    ObjFunction* function;
+    FunctionType type;
+    Local locals[UINT8_COUNT];
+    int localCount;
+    int scopeDepth;
 } Compiler;
 
 Parser parser;
 Compiler* current = NULL;
-Chunk* compilingChunk;
 
 static Chunk* currentChunk() {
-  return compilingChunk;
+  return &current->function->chunk;
 }
 
 static void errorAt(Token* token, const char* message) {
