@@ -186,11 +186,11 @@ static InterpretResult run() {
         return INTERPRET_OK;
         }
         case OP_CONSTANT: {
-        Value constant = READ_CONSTANT();
-        push(constant);
-        printValue(constant);
-        printf("\n");
-        break;
+            Value constant = READ_CONSTANT();
+            push(constant);
+            printValue(constant);
+            printf("\n");
+            break;
           }
         case OP_NIL: push(NIL_VAL); break;
         case OP_TRUE: push(BOOL_VAL(true)); break;
@@ -239,19 +239,15 @@ static InterpretResult run() {
 }
 
 InterpretResult interpret(const char* source) {
-  Chunk chunk;
-  initChunk(&chunk);
+    ObjFunction* function = compile(source);
+    if (function == NULL) return INTERPRET_COMPILE_ERROR;
 
-  if (!compile(source, &chunk)) {
-    freeChunk(&chunk);
-    return INTERPRET_COMPILE_ERROR;
-  }
+    push(OBJ_VAL(function));
+    call(function, 0);
+    CallFrame* frame = &vm.frames[vm.frameCount++];
+    frame->function = function;
+    frame->ip = function->chunk.code;
+    frame->slots = vm.stack;
 
-  vm.chunk = &chunk;
-  vm.ip = vm.chunk->code;
-
-  InterpretResult result = run();
-
-  freeChunk(&chunk);
-  return result;
+    return run();
 }
