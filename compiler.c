@@ -571,7 +571,7 @@ static void unary(bool canAssign)  {
 }
 
 ParseRule rules[] = {
-  [TOKEN_LEFT_PAREN]    = {grouping, NULL,   PREC_NONE},
+  [TOKEN_LEFT_PAREN]    = {grouping, call,   PREC_CALL},
   [TOKEN_RIGHT_PAREN]   = {NULL,     NULL,   PREC_NONE},
   [TOKEN_LEFT_BRACE]    = {NULL,     NULL,   PREC_NONE},
   [TOKEN_RIGHT_BRACE]   = {NULL,     NULL,   PREC_NONE},
@@ -647,20 +647,6 @@ static void expression() {
   parsePrecedence(PREC_ASSIGNMENT);
 }
 
-static void varDeclaration() {
-  uint8_t global = parseVariable("Expect variable name.");
-
-  if (match(TOKEN_EQUAL)) {
-    expression();
-  } else {
-    emitByte(OP_NIL);
-  }
-  consume(TOKEN_SEMICOLON,
-          "Expect ';' after variable declaration.");
-
-  defineVariable(global);
-}
-
 static void statement();
 static void declaration();
 
@@ -672,7 +658,36 @@ static void block() {
   consume(TOKEN_RIGHT_BRACE, "Expect '}' after block.");
 }
 
+static void function(FunctionType type) {
+  Compiler compiler;
+  initCompiler(&compiler, type);
+  beginScope();
 
+  consume(TOKEN_LEFT_PAREN, "Expect '(' after function name.");
+  if (!check(TOKEN_RIGHT_PAREN)) {
+      do {
+        current->function->arity++;
+        if (current->function->arity > 255) {
+          errorAtCurrent("Can't have more than 255 parameters.");
+        }
+        uint8_t constant = parseVariable("Expect parameter name.");
+        defineVariable(constant);
+      } while (match(TOKEN_COMMA));
+    }
+  consume(TOKEN_RIGHT_PAREN, "Expect ')' after parameters.");
+  consume(TOKEN_LEFT_BRACE, "Expect '{' before function body.");
+  block();
+
+  ObjFunction* function = endCompiler();
+  emitBytes(OP_CONSTANT, makeConstant(OBJ_VAL(function)));
+}
+
+static void funDeclaration() {
+  uint8_t global = parseVariable("Expect function name.");
+  markInitialized();
+  function(TYPE_FUNCTION);
+  defineVariable(global);
+}
 
 static void declaration() {
     if (match(TOKEN_FUN)) {
