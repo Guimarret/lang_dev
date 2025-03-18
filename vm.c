@@ -16,7 +16,7 @@ static Value clockNative(int argCount, Value* args) {
 }
 
 static void resetStack() {
-  vm.stackTop = vm.stack;
+    vm.frameCount = 0;
 }
 
 static void runtimeError(const char* format, ...) {
@@ -47,11 +47,12 @@ static void runtimeError(const char* format, ...) {
 }
 
 void initVM() {
-  resetStack();
-  vm.objects = NULL;
+    resetStack();
+    vm.objects = NULL;
 
-  initTable(&vm.globals);
-  initTable(&vm.strings);
+    defineNative("clock", clockNative);
+    initTable(&vm.globals);
+    initTable(&vm.strings);
 }
 
 void freeVM() {
@@ -93,9 +94,15 @@ static void concatenate() {
 }
 
 static InterpretResult run() {
-    #define READ_BYTE() (*vm.ip++)
-    #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
-    #define READ_SHORT() (vm.ip += 2, (uint16_t)((vm.ip[-2] << 8) | vm.ip[-1]))
+    CallFrame* frame = &vm.frames[vm.frameCount - 1];
+
+    #define READ_BYTE() (*frame->ip++)
+
+    #define READ_SHORT() \
+        (frame->ip += 2, \
+        (uint16_t)((frame->ip[-2] << 8) | frame->ip[-1]))
+
+    #define READ_CONSTANT() (frame->function->chunk.constants.values[READ_BYTE()])
     #define READ_STRING() AS_STRING(READ_CONSTANT())
     #define BINARY_OP(valueType, op) \
         do { \
