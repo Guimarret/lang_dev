@@ -227,6 +227,20 @@ static void endScope() {
 
 static void expression();
 
+static void varDeclaration() {
+  uint8_t global = parseVariable("Expect variable name.");
+
+  if (match(TOKEN_EQUAL)) {
+    expression();
+  } else {
+    emitByte(OP_NIL);
+  }
+  consume(TOKEN_SEMICOLON,
+          "Expect ';' after variable declaration.");
+
+  defineVariable(global);
+}
+
 static void expressionStatement() {
   expression();
   consume(TOKEN_SEMICOLON, "Expect ';' after expression.");
@@ -281,7 +295,7 @@ static void forStatement() {
 static void ifStatement() {
   consume(TOKEN_LEFT_PAREN, "Expect '(' after 'if'.");
   expression();
-  consume(TOKEN_RIGHT_PAREN, "Expect ')' after condition."); 
+  consume(TOKEN_RIGHT_PAREN, "Expect ')' after condition.");
 
   int thenJump = emitJump(OP_JUMP_IF_FALSE);
   emitByte(OP_POP);
