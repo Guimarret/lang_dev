@@ -492,6 +492,11 @@ static void binary(bool canAssign) {
   }
 }
 
+static void call(bool canAssign) {
+  uint8_t argCount = argumentList();
+  emitBytes(OP_CALL, argCount);
+}
+
 static void literal(bool canAssign){
   switch (parser.previous.type) {
     case TOKEN_FALSE: emitByte(OP_FALSE); break;
