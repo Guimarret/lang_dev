@@ -6,7 +6,10 @@
 
 typedef enum {
     OP_NEGATE,
+    OP_JUMP,
     OP_PRINT,
+    OP_JUMP_IF_FALSE,
+    OP_LOOP,
     OP_RETURN,
     OP_CONSTANT,
     OP_NIL,
