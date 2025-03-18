@@ -701,13 +701,11 @@ static void statement() {
   }
 }
 
-bool compile(const char* source, Chunk* chunk) {
+ObjFunction* compile(const char* source){
   initScanner(source);
 
   Compiler compiler;
-  initCompiler(&compiler);
-
-  compilingChunk = chunk;
+  initCompiler(&compiler, TYPE_SCRIPT);
 
   parser.hadError = false;
   parser.panicMode = false;
@@ -716,6 +714,6 @@ bool compile(const char* source, Chunk* chunk) {
   while (!match(TOKEN_EOF)) {
     declaration();
   }
-  endCompiler();
-  return !parser.hadError;
+  ObjFunction* function = endCompiler();
+  return parser.hadError ? NULL : function;
 }
