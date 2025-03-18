@@ -196,13 +196,18 @@ static void initCompiler(Compiler* compiler, FunctionType type) {
     local->name.length = 0;
 }
 
-static void endCompiler() {
+static ObjFunction* endCompiler() {
   emitReturn();
+  ObjFunction* function = current->function;
+
   #ifdef DEBUG_PRINT_CODE
   if (!parser.hadError) {
-    disassembleChunk(currentChunk(), "code");
+      disassembleChunk(currentChunk(), function->name != NULL
+          ? function->name->chars : "<script>");
   }
   #endif
+  current = current->enclosing;
+  return function;
 }
 
 static void beginScope() {
