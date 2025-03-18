@@ -670,7 +670,9 @@ static void block() {
 
 
 static void declaration() {
-  if (match(TOKEN_VAR)) {
+    if (match(TOKEN_FUN)) {
+        funDeclaration();
+      } else if (match(TOKEN_VAR)) {
     varDeclaration();
   } else {
     statement();
@@ -686,6 +688,8 @@ static void statement() {
     forStatement();
   } else if (match(TOKEN_IF)) {
     ifStatement();
+  } else if (match(TOKEN_RETURN)) {
+     returnStatement();
   } else if (match(TOKEN_WHILE)) {
     whileStatement();
   } else if (match(TOKEN_LEFT_BRACE)) {
