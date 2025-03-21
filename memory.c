@@ -6,7 +6,6 @@
 
 #ifdef DEBUG_LOG_GC
 #include <stdio.h>
-#include "debug.h"
 #endif
 
 #define GC_HEAP_GROW_FACTOR 2
@@ -102,33 +101,36 @@ static void freeObject(Obj* object) {
 #ifdef DEBUG_LOG_GC
     printf("%p free type %d\n", (void*)object, object->type);
 #endif
-  switch (object->type) {
-    case OBJ_CLOSURE: {
-        ObjClosure* closure = (ObjClosure*)object;
-        FREE_ARRAY(ObjUpvalue*, closure->upvalues,
-                   closure->upvalueCount);
-        FREE(ObjClosure, object);
-        break;
-      }
-    case OBJ_FUNCTION: {
-        ObjFunction* function = (ObjFunction*)object;
-        freeChunk(&function->chunk);
-        FREE(ObjFunction, object);
-        break;
+
+    switch (object->type) {
+        case OBJ_CLOSURE: {
+            ObjClosure* closure = (ObjClosure*)object;
+            FREE_ARRAY(ObjUpvalue*, closure->upvalues, closure->upvalueCount);
+            FREE(ObjClosure, object);
+            break;
         }
-    case OBJ_NATIVE:
-        FREE(ObjNative, object);
-        break;
-    case OBJ_STRING: {
-        ObjString* string = (ObjString*)object;
-        FREE_ARRAY(char, string->chars, string->length + 1);
-        FREE(ObjString, object);
-    case OBJ_UPVALUE:
-        FREE(ObjUpvalue, object);
-        break;
-      break;
+        case OBJ_FUNCTION: {
+            ObjFunction* function = (ObjFunction*)object;
+            freeChunk(&function->chunk);
+            FREE(ObjFunction, object);
+            break;
+        }
+        case OBJ_NATIVE:
+            FREE(ObjNative, object);
+            break;
+        case OBJ_STRING: {
+            ObjString* string = (ObjString*)object;
+            FREE_ARRAY(char, string->chars, string->length + 1);
+            FREE(ObjString, object);
+            break;
+        }
+        case OBJ_UPVALUE:
+            FREE(ObjUpvalue, object);
+            break;
+        default:
+            fprintf(stderr, "Unknown object type: %d\n", object->type);
+            break;
     }
-  }
 }
 
 static void markRoots() {

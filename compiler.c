@@ -237,6 +237,70 @@ static void endScope() {
 }
 
 static void expression();
+static void statement();
+
+static void markInitialized() {
+    if (current->scopeDepth == 0) return;
+    current->locals[current->localCount - 1].depth =
+    current->scopeDepth;
+}
+
+static void defineVariable(uint8_t global) {
+    if (current->scopeDepth > 0) {
+        markInitialized();
+        return;
+    }
+    emitBytes(OP_DEFINE_GLOBAL, global);
+}
+
+static uint8_t identifierConstant(Token* name) {
+  return makeConstant(OBJ_VAL(copyString(name->start, name->length)));
+}
+
+static void addLocal(Token name) {
+    if (current->localCount == UINT8_COUNT) {
+      error("Too many local variables in function.");
+      return;
+    }
+
+    Local* local = &current->locals[current->localCount++];
+    local->name = name;
+    local->depth = -1;
+    local->isCaptured = false;
+}
+
+static bool identifiersEqual(Token* a, Token* b) {
+  if (a->length != b->length) return false;
+  return memcmp(a->start, b->start, a->length) == 0;
+}
+
+static void declareVariable() {
+  if (current->scopeDepth == 0) return;
+
+  Token* name = &parser.previous;
+
+  for (int i = current->localCount - 1; i >= 0; i--) {
+      Local* local = &current->locals[i];
+      if (local->depth != -1 && local->depth < current->scopeDepth) {
+        break;
+      }
+
+      if (identifiersEqual(name, &local->name)) {
+        error("Already a variable with this name in this scope.");
+      }
+    }
+
+  addLocal(*name);
+}
+
+static uint8_t parseVariable(const char* errorMessage) {
+  consume(TOKEN_IDENTIFIER, errorMessage);
+
+  declareVariable();
+    if (current->scopeDepth > 0) return 0;
+
+  return identifierConstant(&parser.previous);
+}
 
 static void varDeclaration() {
   uint8_t global = parseVariable("Expect variable name.");
@@ -381,15 +445,6 @@ static void synchronize() {
 static ParseRule* getRule(TokenType type);
 static void parsePrecedence(Precedence precedence);
 
-static uint8_t identifierConstant(Token* name) {
-  return makeConstant(OBJ_VAL(copyString(name->start, name->length)));
-}
-
-static bool identifiersEqual(Token* a, Token* b) {
-  if (a->length != b->length) return false;
-  return memcmp(a->start, b->start, a->length) == 0;
-}
-
 static int resolveLocal(Compiler* compiler, Token* name) {
   for (int i = compiler->localCount - 1; i >= 0; i--) {
     Local* local = &compiler->locals[i];
@@ -437,60 +492,6 @@ static int resolveUpvalue(Compiler* compiler, Token* name) {
     return addUpvalue(compiler, (uint8_t)upvalue, false);
   }
   return -1;
-}
-
-static void addLocal(Token name) {
-    if (current->localCount == UINT8_COUNT) {
-      error("Too many local variables in function.");
-      return;
-    }
-
-    Local* local = &current->locals[current->localCount++];
-    local->name = name;
-    local->depth = -1;
-    local->isCaptured = false;
-}
-
-static void declareVariable() {
-  if (current->scopeDepth == 0) return;
-
-  Token* name = &parser.previous;
-
-  for (int i = current->localCount - 1; i >= 0; i--) {
-      Local* local = &current->locals[i];
-      if (local->depth != -1 && local->depth < current->scopeDepth) {
-        break;
-      }
-
-      if (identifiersEqual(name, &local->name)) {
-        error("Already a variable with this name in this scope.");
-      }
-    }
-
-  addLocal(*name);
-}
-
-static uint8_t parseVariable(const char* errorMessage) {
-  consume(TOKEN_IDENTIFIER, errorMessage);
-
-  declareVariable();
-    if (current->scopeDepth > 0) return 0;
-
-  return identifierConstant(&parser.previous);
-}
-
-static void markInitialized() {
-    if (current->scopeDepth == 0) return;
-    current->locals[current->localCount - 1].depth =
-    current->scopeDepth;
-}
-
-static void defineVariable(uint8_t global) {
-    if (current->scopeDepth > 0) {
-        markInitialized();
-        return;
-    }
-    emitBytes(OP_DEFINE_GLOBAL, global);
 }
 
 static uint8_t argumentList() {
@@ -697,7 +698,6 @@ static void expression() {
   parsePrecedence(PREC_ASSIGNMENT);
 }
 
-static void statement();
 static void declaration();
 
 static void block() {
